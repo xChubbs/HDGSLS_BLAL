@@ -1,4 +1,4 @@
-% ------------------------------------------------------------------------
+ % ------------------------------------------------------------------------
 %   @ autor : alujan
 % ------------------------------------------------------------------------
 %   @ title : HDG Scheme to eigenvalues of poisson equation
@@ -37,11 +37,11 @@ disp('>> Definición de solución teórica')
 
 % Let's define a simple value for U: harmonic vector
 % - Characteristics of the oscillator particle
-m = 1; omega = 1; hbar = 1;
+m = 1; k = 2; omega = sqrt(k / m); hbar = 1; x0 = 20/2;
 
 % - Definition per coordinate of the oscillator
 n = 2; Ar = 1 / sqrt(2^n * prod(1:n)) * (m*omega/(pi*hbar))^0.25;
-Ur(x) = Ar * exp(-m*omega*(x-10)^2/(2*hbar)) * ...
+Ur(x) = Ar * exp(-m*omega*(x-x0)^2/(2*hbar)) * ...
                           hermiteH(n, sqrt(m*omega/hbar)*(x-10));
 
 % - Caracteristics of the function in space
@@ -189,7 +189,8 @@ for k=1:4
         
         disp('   - Matriz de masa: Mk y Mv')
         % - Computation of the Mass Integrals
-        Mass = MassMatrix(T,{@(x, y, z) 0*x.*y.*z + 1, @(x, y, z) 0*x.*y.*z}, k,formulas{1});
+        Mass = MassMatrix(T,{@(x, y, z) 0*x.*y.*z + 1, ...
+                     @(x, y, z) 0.5*m*omega^2*((x - x0).^2 + (y - x0).^2 + (z - x0).^2)}, k,formulas{1});
 
         % - ALR: Reduce this computation into one single line
         Mi=Mass{1}; Mv=Mass{2};
@@ -296,13 +297,18 @@ for k=1:4
         disp('   - Solución de problema de autovalores')
         % RHS currently has the information of the frontier conditions 
         % and the information of inner skeleton: solution of uhat
-        [Etav_free, lambda] = eigs(M(free, free), K(free, free), 1, (hbar * omega^2 * 3/2));
+        [Etav_free, lambda] = eigs(M(free, free), K(free, free), 1, (hbar*omega^2*(0 + 3/2)));
 
         % ---------------------------------- Local solutions definitions ---------------------------------- %
 
         % Insertion of BC
         Etav = zeros(d2*Nfaces, 2);
         Etav(dirfaces, :) = repmat(etahatD, 1, 2);
+        Etav(free, :)     = Etav_free - M(free,dirfaces)*Etav(dirfaces, :);
+        
+        % Insertion of BC
+        Etav = zeros(d2*Nfaces, 1);
+        Etav(dirfaces, :) = etahatD;
         Etav(free, :)     = Etav_free - M(free,dirfaces)*Etav(dirfaces, :);
         
         % Reorganization of values
@@ -315,8 +321,7 @@ for k=1:4
         Qzh=zeros(d3,Nelts, 2);                                % Reservation of storage
         
         sol = zeros(4*d3, 1);                                   % Temporal reservation of space
-
-        disp('   - Reconstrucción local de variables de Volumen')
+        
         % Parallel solution of system: Newton algorithm
         parfor N = 1:1
         
@@ -333,7 +338,7 @@ for k=1:4
         
             % Update of Eta
             % - Reordering of faces
-            Eta_n = reshape(Etav_n, [d2, Nfaces]);% / inner_Face_L2(T,Eta_n,Eta_n,k,formulas{4});
+            Eta_n = reshape(Etav_n, [d2, Nfaces]);
         
             % - Recover of values per elements
             faces   = T.facebyele'; faces=faces(:);                         % Recovery of faces information
@@ -396,7 +401,7 @@ for k=1:4
         
         ErrorU=[ErrorU error_u/normU];
         ErrorUhat=[ErrorUhat error_eta/normEta];
-        ErrorLambda = [ErrorLambda abs(((hbar * omega^2 * 3/2)) - lambda) / (hbar * omega^2 * 3/2)];
+        ErrorLambda = [ErrorLambda abs((hbar*omega^2*(0 + 3/2)) - lambda) / ((hbar*omega^2*(0 + 3/2)))];
 
         disp('   - El error reportado en lambda es:')
         disp(ErrorLambda(end))
@@ -432,6 +437,5 @@ for k=1:4
     rat_err_k_struct.ErrorLambda = ErrorLambda;
 
     save(name_mat, '-struct', 'rat_err_k_struct')
-
-
+    
 end
