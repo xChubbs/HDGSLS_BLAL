@@ -332,7 +332,7 @@ for k=1:4
         
             % Update of Eta
             % - Reordering of faces
-            Eta_n = reshape(Etav_n, [d2, Nfaces]);% / inner_Face_L2(T,Eta_n,Eta_n,k,formulas{4});
+            Eta_n = reshape(Etav_n, [d2, Nfaces]);
         
             % - Recover of values per elements
             faces   = T.facebyele'; faces=faces(:);                         % Recovery of faces information
@@ -361,6 +361,16 @@ for k=1:4
             end
         
         end
+
+        % Generation of mat structure
+        name_mat = 'box_var_k_' + string(k) + '.mat';
+    
+        box_var_k_struct.Uh     = Uh;
+        box_var_k_struct.Qh1    = cat(3, Qxh(:, :, 1), Qyh(:, :, 1), Qzh(:, :, 1));
+        box_var_k_struct.Qh2    = cat(3, Qxh(:, :, 2), Qyh(:, :, 2), Qzh(:, :, 2));
+        box_var_k_struct.lambda = lambda;
+    
+        save(name_mat, '-struct', 'box_var_k_struct')
 
         % Addition of errors
         disp('   - Adición de errores')

@@ -237,8 +237,8 @@ for k=1:4
         
         O = zeros(d3,d3,Nelts); Ov = [O, O, O]; % Big O cero matrix: Shapes juntions
         
-        A4 = [Mk ,permute(Ov, [2, 1, 3]) ; ...
-              Ov ,tauPP                 ];
+        A4 = [Mk , permute(Ov, [2, 1, 3]) ; ...
+              Ov , tauPP + Mv            ];
         
         O = zeros(4*d2,d3,Nelts);
         
@@ -302,23 +302,18 @@ for k=1:4
         % ---------------------------------- Local solutions definitions ---------------------------------- %
 
         % Insertion of BC
-        Etav = zeros(d2*Nfaces, 2);
-        Etav(dirfaces, :) = repmat(etahatD, 1, 2);
-        Etav(free, :)     = Etav_free - M(free,dirfaces)*Etav(dirfaces, :);
-        
-        % Insertion of BC
         Etav = zeros(d2*Nfaces, 1);
         Etav(dirfaces, :) = etahatD;
         Etav(free, :)     = Etav_free - M(free,dirfaces)*Etav(dirfaces, :);
         
         % Reorganization of values
-        Eta=zeros(d2, Nfaces, 2);
+        Eta=zeros(d2, Nfaces);
         
-        Uh=zeros(d3,Nelts, 2);                                 % Reservation of storage
+        Uh=zeros(d3,Nelts);                                 % Reservation of storage
         
-        Qxh=zeros(d3,Nelts, 2);                                % Reservation of storage
-        Qyh=zeros(d3,Nelts, 2);                                % Reservation of storage
-        Qzh=zeros(d3,Nelts, 2);                                % Reservation of storage
+        Qxh=zeros(d3,Nelts);                                % Reservation of storage
+        Qyh=zeros(d3,Nelts);                                % Reservation of storage
+        Qzh=zeros(d3,Nelts);                                % Reservation of storage
         
         sol = zeros(4*d3, 1);                                   % Temporal reservation of space
         
@@ -342,7 +337,7 @@ for k=1:4
         
             % - Recover of values per elements
             faces   = T.facebyele'; faces=faces(:);                         % Recovery of faces information
-            eta_aux = reshape(Eta_n(:, faces, :),[4*d2, Nelts]);             % Reshape on the faces of Uhat
+            eta_aux = reshape(Eta_n(:, faces, :),[4*d2, Nelts]);            % Reshape on the faces of Uhat
         
             % Update of energies
             lambda(N) = lambda_n;
@@ -367,6 +362,15 @@ for k=1:4
             end
         
         end
+
+        % Generation of mat structure
+        name_mat = 'qho_var_k_' + string(k) + '.mat';
+    
+        qho_var_k_struct.Uh     = Uh;
+        qho_var_k_struct.Qh     = cat(3, Qxh(:, :, 1), Qyh(:, :, 1), Qzh(:, :, 1));
+        qho_var_k_struct.lambda = lambda;
+    
+        save(name_mat, '-struct', 'qho_var_k_struct')
 
         % Addition of errors
         disp('   - Adición de errores')
